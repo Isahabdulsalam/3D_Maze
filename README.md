@@ -27,3 +27,6 @@ SDL2 (Simple DirectMedia Layer) is a cross-platform development library designed
    git clone 3D_Maze
    cd 3D_Maze
 
+## Author
+
+Isah Abdulsalam
