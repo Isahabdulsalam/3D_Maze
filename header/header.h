@@ -1,154 +1,106 @@
-#ifndef HEADER_H
-#define HEADER_H
+#ifndef MAZE_GAME_H
+#define MAZE_GAME_H
 
 #define SCREEN_WIDTH 1080
 #define SCREEN_HEIGHT 600
-#define gun_scale 0.35
-#define map_x 8
-#define map_y 8
-#define map_s 64
+#define MAP_X 8
+#define MAP_Y 8
+#define MAP_S 64
 #define PI 3.14159265
-#define PI2 (0.5 * PI)
-#define PI3 (1.5 * PI)
-#define DR 0.0174533
-#define MAP_SCALE 0.25
-#define num_enemy 5
 #define FOV (PI / 3)
-#define RAD_DEG 57.296
-#define num_rays 60
+#define NUM_RAYS 60
 
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <math.h>
-#include <time.h>
 
 /**
- * struct SDL_Instance - structure for SDL instance
- * @win: window of SDL
- * @ren: renderer of SDL
+ * struct SDL_Context - structure for SDL context
+ * @window: SDL window
+ * @renderer: SDL renderer
  *
- * Description: structure to create window and renderer of SDL
+ * Description: structure to manage SDL window and renderer
 **/
-typedef struct SDL_Instance
+typedef struct SDL_Context
 {
-	SDL_Window *win;
-	SDL_Renderer *ren;
-} SDL_Instance;
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+} SDL_Context;
 
 /**
- * struct btn_keys - structure for event keys
- * @w: up key
- * @a: left key
- * @d: right key
- * @s: down key
- * @e: key for open door
- * @x: key for exit
+ * struct Keys - structure for keyboard input
+ * @up: move up
+ * @left: move left
+ * @right: move right
+ * @down: move down
+ * @open: open door
+ * @exit: exit game
  *
- * Description: structure for handling movement & rotation
+ * Description: structure to manage keyboard inputs
  **/
-typedef struct btn_keys
+typedef struct Keys
 {
-	int w, a, d, s, e, x;
-} btn_keys;
+    int up, left, right, down, open, exit;
+} Keys;
 
 /**
- * struct player_s - structure for the player
+ * struct Player - structure for the player
  * @x: the x coordinate position
  * @y: the y coordinate position
- * @w: the width of the player
- * @h: the height of the player
- * @a: angle of the player
+ * @width: the width of the player
+ * @height: the height of the player
+ * @angle: angle of the player
  * @dx: delta x of the player
  * @dy: delta y of the player
  **/
-typedef struct player_s
+typedef struct Player
 {
-	float x, y, w, h, a, dx, dy;
-} player_t;
+    float x, y, width, height, angle, dx, dy;
+} Player;
 
-extern player_t player;
-
-/**
- * struct enemy_s - structure for the enemy
- * @x: the x coordinate position
- * @y: the y coordinate position
- * @z: the z coordinate
- * @path: the given path of the image
- **/
-typedef struct enemy_s
-{
-	float x, y, z;
-	char *path;
-} enemy_t;
-
-extern enemy_t enemy;
-extern float buff[num_rays];
+extern Player player;
+extern float distance_buffer[NUM_RAYS];
 
 /** main.c **/
-void init_game(void);
-void display(SDL_Instance instance);
+void initialize_game(void);
+void game_loop(SDL_Context context);
 
-/** input **/
-int poll_events(SDL_Instance instance);
-void handle_key_down(SDL_Instance instance);
-void key_up(SDL_Event ev);
-void key_down(SDL_Event ev);
-void handle_door(void);
+/** input.c **/
+int handle_events(SDL_Context context);
+void on_key_down(SDL_Context context);
+void on_key_up(SDL_Event event);
+void handle_door_event(void);
 
-/** window **/
-int init_instance(SDL_Instance *in);
-float FixAng(float a);
+/** window.c **/
+int create_window(SDL_Context *context);
+float normalize_angle(float angle);
 
-/** draw **/
-void display_player(SDL_Instance instance);
-void draw_map(SDL_Instance ins);
-void draw_scene(SDL_Instance ins, int n, float h, float ray_a, float shade,
-		float rx, float ry, int m_txr);
-void draw_floor(SDL_Instance ins, float ln_off, int n, float line, float ra);
-void draw_roof(SDL_Instance ins, float ln_off, int n, float line, float ra);
+/** render.c **/
+void render_player(SDL_Context context);
+void render_map(SDL_Context context);
+void render_scene(SDL_Context context, int column, float wall_height, float ray_angle, float shade,
+                  float ray_x, float ray_y, int texture);
 
-/** cast **/
-void ray_cast(SDL_Instance ins);
-int hit_wall(float rx, float ry);
-void horizontal_collision(float ray_a, float *d, float *hx, float *hy, int *h);
-void vertical_collision(float ray_a, float *vd, float *vx, float *vy, int *v);
-float find_distance(float ax, float ay, float bx, float by);
+/** raycasting.c **/
+void perform_raycasting(SDL_Context context);
+int detect_wall(float ray_x, float ray_y);
+void handle_horizontal_collision(float ray_angle, float *distance, float *hit_x, float *hit_y, int *hit);
+void handle_vertical_collision(float ray_angle, float *distance, float *hit_x, float *hit_y, int *hit);
+float calculate_distance(float x1, float y1, float x2, float y2);
 
-/** draw2 **/
-void add_weapon(SDL_Instance ins);
-void add_enemy(SDL_Instance ins);
-float find_viewdistance(void);
-void draw_sprite_map(SDL_Instance ins);
-void sort_sprite(int *sprite, double *spr_dis, int n);
+/** texture.c **/
+float get_texture_coordinate(int index);
 
-/** texture **/
-float get_texture(int idx);
+/** map.c **/
+void update_map_value(int x, int y, int value);
+int get_map_value(int x, int y);
+void generate_maze(int maze[MAP_X][MAP_Y]);
 
-/** map **/
-void setmap_value(int mx, int my, int val);
-int getmap_value(int x, int y, int mp);
-void free_numbers(int **numbers);
-void make_map(char **argv);
+/** memory.c **/
+void free_allocated_memory(void);
 
-/** get_map **/
-int _atoi(char *s);
-char *_strdup(char *str);
-int _length(char *str);
-int **get_altitude(char **argv);
-char **str_split(char *str, char *del);
-
-/** free_mem **/
-void free_grid(SDL_Point ***grid);
-void free_tokens(char **tokens);
-void free_cols(char ***cols);
-void free_numbers(int **numbers);
-
-#endif /* DEMO_H */
+#endif /* MAZE_GAME_H */
 
